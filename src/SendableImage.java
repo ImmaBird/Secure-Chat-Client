@@ -7,10 +7,10 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.image.*;
 
-public class IMAGE_OBJ implements Serializable {
+public class SendableImage implements Serializable {
 	private byte[] byteImage = null;
 
-	public IMAGE_OBJ(String f) {
+	public SendableImage(String f) {
 		try {
 			BufferedImage bi = ImageIO.read(new File(f));
 			byteImage = toByteArray(bi);
@@ -33,7 +33,7 @@ public class IMAGE_OBJ implements Serializable {
 		return new byte[0];
 	}
 
-	private BufferedImage fromByteArray() throws IOException {
+	public BufferedImage fromByteArray() throws IOException {
 		return ImageIO.read(new ByteArrayInputStream(byteImage));
 	}
 

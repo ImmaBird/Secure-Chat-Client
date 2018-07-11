@@ -12,13 +12,15 @@ public class ClientList {
         clients.removeIf(client -> client.getId() == id);
     }
 
-    public void send(int senderId, Message message) {
+    public void broadcast(Message message) {
+        int senderId = message.getSenderId();
         for (Client client : clients) {
             if (client.getId() != senderId) {
                 try {
                     client.send(message);
                 } catch (Exception ex) {
-                    System.out.printf("Failed to send from client \"%d\" to client \"%d\".\n", senderId, client.getId());
+                    System.out.printf("Failed to send from client \"%d\" to client \"%d\".\n", senderId,
+                            client.getId());
                     ex.printStackTrace();
                 }
             }

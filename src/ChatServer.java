@@ -1,5 +1,7 @@
+import java.io.EOFException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.Scanner;
 
 public class ChatServer {
@@ -29,28 +31,25 @@ public class ChatServer {
 		start();
 	}
 
-	private boolean serverRunning = true;
+	private volatile boolean serverRunning = true;
 	private int port = 7777;
-	private ClientList clients = new ClientList();
+	private volatile ClientList clients = new ClientList();
+	private Thread welcomeThread;
 
 	private void start() {
 		// starts the welcome socket on a new thread
-		Thread welcomeThread = new Thread(new Runnable() {
+		this.welcomeThread = new Thread(new Runnable() {
 			public void run() {
 				welcomeSocket();
 			}
 		});
-		welcomeThread.start();
+		this.welcomeThread.start();
 
-		// waits for the command to stop the server
+		// handle server commands
 		System.out.println("Type \"stop\" to quit.");
 		try (Scanner sc = new Scanner(System.in)) {
 			while (this.serverRunning) {
-				if (sc.nextLine().equals("stop")) {
-					System.out.println("Server stopping...");
-					this.serverRunning = false;
-					welcomeThread.interrupt();
-				}
+				handleServerCommand(sc.nextLine());
 			}
 		}
 	}
@@ -63,14 +62,17 @@ public class ChatServer {
 
 				// accepts new connections to the server
 				while (this.serverRunning) {
-					Socket newClient = welcomeSocket.accept();
+					try {
+						Socket newClient = welcomeSocket.accept();
 
-					// handles clients in seperate threads
-					new Thread(new Runnable() {
-						public void run() {
-							handleClient(newClient);
-						}
-					}).start();
+						// handles clients in seperate threads
+						new Thread(new Runnable() {
+							public void run() {
+								handleClient(newClient);
+							}
+						}).start();
+					} catch (SocketTimeoutException ex) {
+					}
 				}
 			} catch (Exception ex) {
 				ex.printStackTrace();
@@ -85,12 +87,63 @@ public class ChatServer {
 			id = client.getId();
 
 			while (this.serverRunning) {
-				// TODO handle client
+				Message message = client.receive();
+				message.setSenderId(client.getId()); // set sender id
+				switch (message.getType()) {
+				case serverCommand:
+					handleClientCommand(client, message.getText());
+					break;
+				case text:
+					System.out.println(message.getText());
+					System.out.flush();
+					this.clients.broadcast(message);
+					break;
+				case picture:
+					break;
+				case serverReply:
+					// disconnect this client for trying something sneaky
+					return;
+				}
 			}
+		} catch (EOFException ex) {
+			System.out.printf("Client \"%d\" has disconnected.\n", id);
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		} finally {
 			clients.remove(id);
 		}
+	}
+
+	private void handleClientCommand(Client client, String command) {
+		switch (command) {
+		default:
+			clientCommandNotFound(client);
+			break;
+		}
+	}
+
+	private void clientCommandNotFound(Client client) {
+		try {
+			client.send(new Message("Command not found.", Message.messageType.serverReply));
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+
+	private void handleServerCommand(String command) {
+		switch (command) {
+		case "stop":
+			stop();
+			break;
+		default:
+			System.err.println("Command not found.");
+			break;
+		}
+	}
+
+	private void stop() {
+		System.out.println("Server stopping...");
+		this.serverRunning = false;
+		this.welcomeThread.interrupt();
 	}
 }
