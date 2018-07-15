@@ -1,25 +1,25 @@
 import java.net.Socket;
-import java.net.SocketAddress;
+
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import javafx.util.Callback;
 
 public class ChatClient extends Application {
 
@@ -28,7 +28,7 @@ public class ChatClient extends Application {
 	private String ip = "";
 	private int port = 0;
 	private Connection server;
-	private ListView<String> chatArea;
+	private ListView<Label> chatArea;
 
 	public static void main(String[] args) {
 		Application.launch();
@@ -90,22 +90,7 @@ public class ChatClient extends Application {
 
 		BorderPane chatPane = new BorderPane();
 
-		this.chatArea = new ListView<String>();
-
-		this.chatArea.setCellFactory(new Callback<ListView<String>, ListCell<String>>() {
-			public ListCell<String> call(final ListView<String> list) {
-				return new ListCell<String>() {
-					{
-						Text text = new Text();
-						text.wrappingWidthProperty().bind(list.widthProperty().subtract(15));
-						text.textProperty().bind(itemProperty());
-
-						setPrefWidth(0);
-						setGraphic(text);
-					}
-				};
-			}
-		});
+		this.chatArea = new ListView<Label>();
 
 		TextArea messageBox = new TextArea();
 		messageBox.setWrapText(true);
@@ -169,11 +154,15 @@ public class ChatClient extends Application {
 					case text:
 						message.getText();
 						Platform.runLater(() -> {
-							this.chatArea.getItems().add(message.getSenderName() + ": " + message.getText());
+							Label label = new Label(message.getSenderName() + ": " + message.getText());
+							label.setPrefWidth(580);
+							label.setWrapText(true);
+							this.chatArea.getItems().add(label);
 							this.chatArea.scrollTo(this.chatArea.getItems().size() - 1);
 						});
 						break;
 					case picture:
+						displayImage(message);
 						break;
 					case serverReply:
 						break;
@@ -188,13 +177,33 @@ public class ChatClient extends Application {
 	}
 
 	private void sendMessage(String text) {
-		// ui stuff
-		this.chatArea.getItems().add("You: " + text);
-		this.chatArea.scrollTo(this.chatArea.getItems().size() - 1);
+		if (text.startsWith("/picture")) {
+			sendPicture(text);
+		} else {
+			// ui stuff
+			Label label = new Label("You: " + text);
+			label.setPrefWidth(560);
+			label.setWrapText(true);
+			this.chatArea.getItems().add(label);
+			this.chatArea.scrollTo(this.chatArea.getItems().size() - 1);
 
-		// sending stuff
+			// sending stuff
+			try {
+				Message message = new Message(text, Message.messageType.text);
+				message.setSenderName(this.name);
+				this.server.send(message);
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+		}
+	}
+
+	private void sendPicture(String text) {
 		try {
-			Message message = new Message(text, Message.messageType.text);
+			String path = text.split(" ")[1];
+			SendableImage image = new SendableImage(path);
+			Message message = new Message(image, Message.messageType.picture);
+			displayImage(message);
 			message.setSenderName(this.name);
 			this.server.send(message);
 		} catch (Exception ex) {
@@ -202,4 +211,15 @@ public class ChatClient extends Application {
 		}
 	}
 
+	private void displayImage(Message message) {
+		Platform.runLater(() -> {
+			Image image = SwingFXUtils.toFXImage(message.getImage(), null);
+			Label label = new Label();
+			label.setGraphic(new ImageView(image));
+			label.setPrefWidth(560);
+			this.chatArea.getItems().add(label);
+
+			this.chatArea.scrollTo(this.chatArea.getItems().size() - 1);
+		});
+	}
 }

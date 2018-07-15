@@ -94,11 +94,13 @@ public class ChatServer {
 					handleClientCommand(client, message.getText());
 					break;
 				case text:
-					System.out.println(message.getText());
+					System.out.println(message.getSenderId() + ": " + message.getText());
 					System.out.flush();
 					this.clients.broadcast(message);
 					break;
 				case picture:
+					System.out.println(message.getSenderId() + ": This client has sent an image.");
+					this.clients.broadcast(message);
 					break;
 				case serverReply:
 					// disconnect this client for trying something sneaky

@@ -15,11 +15,12 @@ public class Message implements Serializable {
 
     public Message(String message, messageType type) {
         this.type = type;
-        if (this.type == messageType.picture) {
-            this.image = new SendableImage(message);
-        } else {
-            this.text = message;
-        }
+        this.text = message;
+    }
+
+    public Message(SendableImage image, messageType type) {
+        this.type = type;
+        this.image = image;
     }
 
     public void setSenderId(int num) {
