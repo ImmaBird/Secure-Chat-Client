@@ -7,6 +7,7 @@ public class Message implements Serializable {
         text, picture, serverCommand, serverReply
     };
 
+    private String senderName;
     private int senderId;
     private String text;
     private SendableImage image;
@@ -35,6 +36,14 @@ public class Message implements Serializable {
 
     public String getText() {
         return text;
+    }
+
+    public void setSenderName(String name){
+        this.senderName = name;
+    }
+
+    public String getSenderName(){
+        return this.senderName;
     }
 
     public BufferedImage getImage() {

@@ -135,6 +135,10 @@ public class ChatServer {
 		case "stop":
 			stop();
 			break;
+		case "des":
+			Crypto.algorithm = Crypto.Algorithm.DES;
+		case "aes":
+			Crypto.algorithm = Crypto.Algorithm.AES;
 		default:
 			System.err.println("Command not found.");
 			break;
@@ -145,5 +149,8 @@ public class ChatServer {
 		System.out.println("Server stopping...");
 		this.serverRunning = false;
 		this.welcomeThread.interrupt();
+		for (Client client : this.clients) {
+			client.getThread().interrupt();
+		}
 	}
 }

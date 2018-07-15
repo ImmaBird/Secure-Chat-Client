@@ -1,6 +1,7 @@
 import java.util.LinkedList;
+import java.util.Iterator;
 
-public class ClientList {
+public class ClientList implements Iterable<Client>{
 
     private LinkedList<Client> clients = new LinkedList<Client>();
 
@@ -25,5 +26,9 @@ public class ClientList {
                 }
             }
         }
+    }
+
+    public Iterator<Client> iterator() {
+        return clients.iterator();
     }
 }

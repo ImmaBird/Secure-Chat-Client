@@ -12,7 +12,7 @@ public class Connection implements Closeable {
     private Socket socket;
     private ObjectOutputStream out;
     private ObjectInputStream in;
-    private AES aes;
+    private Crypto crypto;
 
     public Connection(Socket socket) {
         this.socket = socket;
@@ -32,18 +32,18 @@ public class Connection implements Closeable {
             key = DiffieHellman.clientTransaction(in, out);
         }
 
-        this.aes = new AES(key);
+        this.crypto = new Crypto(key);
     }
 
     public synchronized void send(Message message) throws IOException, Exception {
-        SealedObject so = this.aes.encrypt(message);
+        SealedObject so = this.crypto.encrypt(message);
         this.out.writeObject(so);
         this.out.flush();
     }
 
     public Message receive() throws IOException, ClassNotFoundException, Exception {
         SealedObject so = (SealedObject) this.in.readObject();
-        return (Message) this.aes.decrypt(so);
+        return (Message) this.crypto.decrypt(so);
     }
 
     public Socket getSocket() {
