@@ -1,4 +1,3 @@
-import java.io.EOFException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -107,10 +106,8 @@ public class ChatServer {
 					return;
 				}
 			}
-		} catch (EOFException ex) {
-			System.out.printf("Client \"%d\" has disconnected.\n", id);
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			System.out.printf("Client \"%d\" has disconnected.\n", id);
 		} finally {
 			clients.remove(id);
 		}
@@ -152,7 +149,7 @@ public class ChatServer {
 		this.serverRunning = false;
 		this.welcomeThread.interrupt();
 		for (Client client : this.clients) {
-			client.getThread().interrupt();
+			client.close();
 		}
 	}
 }

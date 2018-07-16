@@ -16,7 +16,6 @@ public class Connection implements Closeable {
 
     public Connection(Socket socket) {
         this.socket = socket;
-
         // Make object streams
         try {
             this.out = new ObjectOutputStream(this.socket.getOutputStream());

@@ -19,6 +19,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 public class ChatClient extends Application {
@@ -114,10 +115,20 @@ public class ChatClient extends Application {
 			messageBox.clear();
 		});
 
+		Button sendPicture = new Button("Send Picture");
+		sendPicture.setOnMouseClicked(event -> {
+			FileChooser fc = new FileChooser();
+			fc.setTitle("Select and image to send");
+			sendPicture(fc.showOpenDialog(stage).getAbsolutePath());
+		});
+
 		HBox hb = new HBox();
 		HBox.setHgrow(messageBox, Priority.ALWAYS);
 
-		hb.getChildren().addAll(messageBox, send);
+		VBox vb = new VBox();
+		vb.getChildren().addAll(send, sendPicture);
+		
+		hb.getChildren().addAll(messageBox, vb);
 
 		chatPane.setCenter(this.chatArea);
 		chatPane.setBottom(hb);
@@ -177,34 +188,39 @@ public class ChatClient extends Application {
 	}
 
 	private void sendMessage(String text) {
-		if (text.startsWith("/picture")) {
-			sendPicture(text);
-		} else {
-			// ui stuff
-			Label label = new Label("You: " + text);
-			label.setPrefWidth(560);
-			label.setWrapText(true);
-			this.chatArea.getItems().add(label);
-			this.chatArea.scrollTo(this.chatArea.getItems().size() - 1);
+		if (text.startsWith("/des")){
+			Crypto.algorithm = Crypto.Algorithm.DES;
+			return;
+		}
+		if (text.startsWith("/aes")){
+			Crypto.algorithm = Crypto.Algorithm.AES;
+			return;
+		}
+		// ui stuff
+		Label label = new Label("You: " + text);
+		label.setPrefWidth(560);
+		label.setWrapText(true);
+		this.chatArea.getItems().add(label);
+		this.chatArea.scrollTo(this.chatArea.getItems().size() - 1);
 
-			// sending stuff
-			try {
-				Message message = new Message(text, Message.messageType.text);
-				message.setSenderName(this.name);
-				this.server.send(message);
-			} catch (Exception ex) {
-				ex.printStackTrace();
-			}
+		// sending stuff
+		try {
+			Message message = new Message(text, Message.messageType.text);
+			message.setSenderName(this.name);
+			this.server.send(message);
+		} catch (Exception ex) {
+			ex.printStackTrace();
 		}
 	}
 
-	private void sendPicture(String text) {
+	private void sendPicture(String path) {
+		SendableImage image = new SendableImage(path);
+		Message message = new Message(image, Message.messageType.picture);
+		message.setSenderName("You");
+		displayImage(message);
+		message.setSenderName(this.name);
+
 		try {
-			String path = text.split(" ")[1];
-			SendableImage image = new SendableImage(path);
-			Message message = new Message(image, Message.messageType.picture);
-			displayImage(message);
-			message.setSenderName(this.name);
 			this.server.send(message);
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -214,11 +230,22 @@ public class ChatClient extends Application {
 	private void displayImage(Message message) {
 		Platform.runLater(() -> {
 			Image image = SwingFXUtils.toFXImage(message.getImage(), null);
-			Label label = new Label();
-			label.setGraphic(new ImageView(image));
-			label.setPrefWidth(560);
-			this.chatArea.getItems().add(label);
 
+			Label label1;
+			if (message.getSenderName().equals(this.name)){
+				label1 = new Label("You: ");
+			}else{
+				label1 = new Label(message.getSenderName() + ": ");
+			}
+
+			this.chatArea.getItems().add(label1);
+			Label label2 = new Label();
+			ImageView imageView = new ImageView(image);
+			imageView.setFitWidth(300);
+			imageView.setPreserveRatio(true);
+			label2.setGraphic(imageView);
+			label2.setPrefWidth(560);
+			this.chatArea.getItems().add(label2);
 			this.chatArea.scrollTo(this.chatArea.getItems().size() - 1);
 		});
 	}
