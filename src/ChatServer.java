@@ -136,8 +136,10 @@ public class ChatServer {
 			break;
 		case "des":
 			Crypto.algorithm = Crypto.Algorithm.DES;
+			break;
 		case "aes":
 			Crypto.algorithm = Crypto.Algorithm.AES;
+			break;
 		default:
 			System.err.println("Command not found.");
 			break;
